@@ -1,0 +1,4 @@
+include ':app', ':imageloader'
+include ':PhotoGallery'
+include ':_28_Search_PhotoGallery'
+include ':_27_Handlers_PhotoGallery'
