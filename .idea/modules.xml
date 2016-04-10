@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/AndroidPrograming.iml" filepath="$PROJECT_DIR$/AndroidPrograming.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ImageLoader.iml" filepath="$PROJECT_DIR$/ImageLoader.iml" />
       <module fileurl="file://$PROJECT_DIR$/PhotoGallery/PhotoGallery.iml" filepath="$PROJECT_DIR$/PhotoGallery/PhotoGallery.iml" />
       <module fileurl="file://$PROJECT_DIR$/_27_Handlers_PhotoGallery/_27_Handlers_PhotoGallery.iml" filepath="$PROJECT_DIR$/_27_Handlers_PhotoGallery/_27_Handlers_PhotoGallery.iml" />
       <module fileurl="file://$PROJECT_DIR$/_28_Search_PhotoGallery/_28_Search_PhotoGallery.iml" filepath="$PROJECT_DIR$/_28_Search_PhotoGallery/_28_Search_PhotoGallery.iml" />
