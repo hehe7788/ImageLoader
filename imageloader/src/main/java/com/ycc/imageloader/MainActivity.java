@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ContentProvider;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.database.Cursor;
 import android.media.MediaActionSound;
 import android.net.Uri;
@@ -12,14 +13,22 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
 import android.widget.GridView;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ycc.imageloader.bean.FolderBean;
+import com.ycc.imageloader.util.ImageLoader;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -31,6 +40,8 @@ import java.util.Set;
 
 public class MainActivity extends Activity {
 
+    public static final int MSG_IMG_LOADED = 0x111;
+    private static final String TAG = "MainActivity";
     private GridView mGridView;
     private List<String> mImages;
 
@@ -46,7 +57,7 @@ public class MainActivity extends Activity {
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            if (msg.what == 0x111) {
+            if (msg.what == MSG_IMG_LOADED) {
                 mProgressDialog.dismiss();
                 //绑定数据到view中
                 dataToView();
@@ -54,6 +65,7 @@ public class MainActivity extends Activity {
 
         }
     };
+    private ImageAdapter mImageAdapter;
 
     protected void dataToView() {
         if (mCurrentDir == null) {
@@ -64,6 +76,10 @@ public class MainActivity extends Activity {
         //数组转为List
         mImages = Arrays.asList(mCurrentDir.list());
         //使用mImages构造gridview的适配器
+        mImageAdapter = new ImageAdapter(this , mImages, mCurrentDir.getAbsolutePath());
+        mGridView.setAdapter(mImageAdapter);
+
+        mDirCount.setText(mMaxCount + "");
     }
 
     @Override
@@ -86,10 +102,75 @@ public class MainActivity extends Activity {
         mDirCount = (TextView) findViewById(R.id.main_dir_count);
     }
 
+    private class ImageAdapter extends BaseAdapter {
+
+        private String mDirPath;
+        private List<String> mFileNames;
+        private LayoutInflater mInflater;
+        /**
+         * @param context 上下文
+         * @param fileNames 文件名的集合，不存路径的集合是为了节省空间
+         * @param dirPath 父路径
+         */
+        public ImageAdapter(Context context, List<String> fileNames, String dirPath) {
+            this.mDirPath = dirPath;
+            this.mFileNames = fileNames;
+            this.mInflater = LayoutInflater.from(context);
+        }
+
+
+        @Override
+        public int getCount() {
+            return mFileNames.size();
+        }
+
+        @Override
+        public Object getItem(int position) {
+            return mFileNames.get(position);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return position;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ViewHolder viewHolder;
+            if (convertView == null) {
+                convertView = mInflater.inflate(R.layout.item_main_grid_view, parent, false);
+
+                viewHolder = new ViewHolder();
+                viewHolder.imageView = (ImageView) convertView.findViewById(R.id.item_image);
+                viewHolder.imageButton = (ImageButton) convertView.findViewById(R.id.item_select);
+
+                //
+                convertView.setTag(viewHolder);
+            } else {
+                viewHolder = (ViewHolder) convertView.getTag();
+            }
+
+            //重置状态
+            viewHolder.imageView.setImageResource(R.drawable.null_picture);
+            viewHolder.imageButton.setImageResource(R.drawable.btn_check_off);
+
+            //载入图片
+            ImageLoader.getInstance(5, ImageLoader.Type.FIFO)
+                    .loadImage(mDirPath + "/" + mFileNames.get(position), viewHolder.imageView);
+
+            return convertView;
+        }
+
+        private class ViewHolder {
+            ImageView imageView;
+            ImageButton imageButton;
+        }
+    }
     /**
      *开启线程，利用content provider，扫描手机中的图片，通过handler通知主线程更新ui
      */
     private void loadData() {
+        Log.e(TAG, Environment.getExternalStorageState() + "  " + Environment.getExternalStorageDirectory());
         if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
             Toast.makeText(this, "当前存储卡不可用", Toast.LENGTH_SHORT).show();
             return;
@@ -101,18 +182,24 @@ public class MainActivity extends Activity {
             @Override
             public void run() {
                 Uri mImgUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+                Log.e(TAG, "mImgUri  " + mImgUri.toString());
                 ContentResolver cr = MainActivity.this.getContentResolver();
 
-                Cursor cursor = cr.query(mImgUri, null, MediaStore.Images.Media.MIME_TYPE
-                                + " =?or" + MediaStore.Images.Media.MIME_TYPE
-                                + " =?", new String[]{"image/jpeg", "image/png"},
+                Cursor cursor = cr.query(mImgUri,
+                        null,
+                        MediaStore.Images.Media.MIME_TYPE
+                                + " =?or " + MediaStore.Images.Media.MIME_TYPE
+                                + " =?",
+                        new String[]{"image/jpeg", "image/png"},
                         MediaStore.Images.Media.DATE_MODIFIED);
 
                 Set<String> mDirPaths = new HashSet<>();
 
                 if (cursor != null) {
                     while (cursor.moveToNext()) {
+                        //图片路径
                         String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
+                        //图片的父路径
                         File parentFile = new File(path).getParentFile();
 
                         if (parentFile == null) {
@@ -130,7 +217,6 @@ public class MainActivity extends Activity {
                             folderBean = new FolderBean();
                             folderBean.setDir(dirPath);
                             folderBean.setFirstImgPath(path);
-
                         }
 
                         if (parentFile.list() == null) {
@@ -159,7 +245,7 @@ public class MainActivity extends Activity {
                     }
                     cursor.close();
                     //通知handler图片扫描完成
-                    mHandler.sendEmptyMessage(0x111);
+                    mHandler.sendEmptyMessage(MSG_IMG_LOADED);
                 }
             }
         }.start();

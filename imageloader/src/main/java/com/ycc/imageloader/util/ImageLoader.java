@@ -103,11 +103,13 @@ public class ImageLoader {
         //获取应用最大可用内存
         int maxMemory = (int) Runtime.getRuntime().maxMemory();
         int cacheMemory = maxMemory / 8;
+        Log.e(TAG, "cacheMemory:" + cacheMemory);
 
         mLruCache = new LruCache<String, Bitmap>(cacheMemory) {
             @Override
             protected int sizeOf(String key, Bitmap value) {
                 //get每个bitmap占据的内存
+                Log.e(TAG, "mLruCache sizeOf: " + value.getRowBytes() * value.getHeight() + " " + value.getByteCount());
                 return value.getRowBytes() * value.getHeight();
             }
         };
@@ -182,7 +184,7 @@ public class ImageLoader {
         if (bitmap != null) {
             refreshBitmap(bitmap, path, imageView);
         } else {
-            //没有从缓存中获取
+            //没有从缓存中获取，则将图片压缩后加入缓存
             addTask(new Runnable(){
                 @Override
                 public void run() {
@@ -268,7 +270,7 @@ public class ImageLoader {
 
             inSampleSize = Math.max(widthRadio, heightRadio);
         }
-        return 0;
+        return inSampleSize;
     }
 
     /**
