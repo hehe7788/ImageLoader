@@ -33,7 +33,7 @@ public class ImageLoader {
      * 线程池
      */
     private ExecutorService mThreadPool;
-    private static final  int DEAFULT_THREAD_COUNT = 1;
+    public static final int DEFAULT_THREAD_COUNT = 3;
 
     /**
      * 队列调度方式
@@ -71,35 +71,12 @@ public class ImageLoader {
         init(threadCount, type);
     }
 
+    /**
+     *
+     * @param threadCount 线程数
+     * @param type lifo fifo
+     */
     private void init(int threadCount, Type type) {
-        //后台轮询线程，及其handler
-        mPoolThread = new Thread() {
-            @Override
-            public void run() {
-                Looper.prepare();
-                mPoolThreadHandler = new Handler() {
-                    @Override
-                    public void handleMessage(Message msg) {
-                        //todo 从线程池中取出一个任务去执行
-                        mThreadPool.execute(getTask());
-
-                        //使用信号量阻塞线程，使线程数最多为threadCount
-                        try {
-                            mSemaphoreThreadPool.acquire();
-                        } catch (InterruptedException e) {
-                            Log.e(TAG, e.toString());
-                        }
-
-                    }
-                };
-                //释放一个信号量
-                mSemaphorePoolThreadHandler.release();
-                Looper.loop();
-            }
-        };
-
-        mPoolThread.start();
-
         //获取应用最大可用内存
         int maxMemory = (int) Runtime.getRuntime().maxMemory();
         int cacheMemory = maxMemory / 8;
@@ -122,19 +99,46 @@ public class ImageLoader {
 
         //限定mSemaphoreThreadPool的数量
         mSemaphoreThreadPool = new Semaphore(threadCount);
+
+        //后台轮询线程，及其handler
+        mPoolThread = new Thread() {
+            @Override
+            public void run() {
+                Looper.prepare();
+                mPoolThreadHandler = new Handler() {
+                    @Override
+                    public void handleMessage(Message msg) {
+                        //从线程池中取出一个任务runnable去执行
+                        mThreadPool.execute(getTask());
+
+                        //取出一个任务就acquire一个Permit，如果没有permit了则阻塞线程，使线程数最多为threadCount
+                        try {
+                            mSemaphoreThreadPool.acquire();
+                        } catch (InterruptedException e) {
+                            Log.e(TAG, e.toString());
+                        }
+                    }
+                };
+                //执行完一个任务，释放一个信号量permit
+                mSemaphorePoolThreadHandler.release();
+                Looper.loop();
+            }
+        };
+
+        mPoolThread.start();
     }
 
     /**
      * 根据类型，从任务队列取一个任务
-     * @return
+     * @return 任务
      */
     private Runnable getTask() {
         if (mType == Type.FIFO) {
             return mTaskQueue.removeFirst();
-        } else if (mType == Type.LIFO) {
+        } else {
+        //if (mType == Type.LIFO) {
             return mTaskQueue.removeLast();
         }
-        return null;
     }
 
     public static ImageLoader getInstance(int threadCount, Type type) {
@@ -332,16 +336,16 @@ public class ImageLoader {
     private synchronized void addTask(Runnable runnable) {
         mTaskQueue.add(runnable);
 
-        //需要等待mPoolThreadHandler初始化完成后
         try {
+            //如果mPoolThreadHandler还没有初始化，阻塞线程直到能获取permit（初始化的语句后面释放了permit)
             if (mPoolThreadHandler == null) {
                 mSemaphorePoolThreadHandler.acquire();
             }
         } catch (InterruptedException e) {
             Log.e(TAG, e.toString());
         }
+        //发送消息通知handler已经加入了新任务
         mPoolThreadHandler.sendEmptyMessage(0x110);
-
     }
 
     /**
