@@ -141,6 +141,10 @@ public class ImageLoader {
         }
     }
 
+    public static ImageLoader getInstance() {
+        return getInstance(DEFAULT_THREAD_COUNT, Type.LIFO);
+    }
+
     public static ImageLoader getInstance(int threadCount, Type type) {
         //单例模式双重判断，
         // 如果直接将方法写成同步的，可能效率低，第一个if提高效率

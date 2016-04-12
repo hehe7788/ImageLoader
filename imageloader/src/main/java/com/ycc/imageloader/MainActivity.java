@@ -13,12 +13,16 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.WindowManager;
 import android.widget.GridView;
+import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ycc.imageloader.bean.FolderBean;
+import com.ycc.imageloader.bean.ImageDirPopupWindow;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -56,6 +60,7 @@ public class MainActivity extends Activity {
         }
     };
     private ImageAdapter mImageAdapter;
+    private ImageDirPopupWindow mPopUpWindow;
 
     protected void dataToView() {
         if (mCurrentDir == null) {
@@ -90,6 +95,30 @@ public class MainActivity extends Activity {
         mBottomBar = (RelativeLayout) findViewById(R.id.main_bottom_bar);
         mDirName = (TextView) findViewById(R.id.main_dir_name);
         mDirCount = (TextView) findViewById(R.id.main_dir_count);
+
+        mPopUpWindow = new ImageDirPopupWindow(this, mFolderBeans);
+        mPopUpWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                lightOn();
+            }
+        });
+    }
+
+    /**
+     * 内容区域变亮
+     */
+    private void lightOn() {
+        WindowManager.LayoutParams lp = getWindow().getAttributes();
+        lp.alpha  = 1.0f;
+        getWindow().setAttributes(lp);
+    }
+
+
+    private void lightOff() {
+        WindowManager.LayoutParams lp = getWindow().getAttributes();
+        lp.alpha  = 0.3f;
+        getWindow().setAttributes(lp);
     }
 
     /**
@@ -132,7 +161,7 @@ public class MainActivity extends Activity {
                             continue;
                         }
                         String dirPath = parentFile.getAbsolutePath();
-
+                        Log.e(TAG, "path: " + path + " parent.getAbsolutePath:" + dirPath);
                         FolderBean folderBean;
 
                         //防止重复扫描
@@ -181,7 +210,17 @@ public class MainActivity extends Activity {
      * 控件的点击事件
      */
     private void initEvent() {
-
+        mBottomBar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mPopUpWindow.isShowing()) {
+                    mPopUpWindow.dismiss();
+                } else {
+                    mPopUpWindow.showAsDropDown(mBottomBar, 0, 0);
+                    lightOff();
+                }
+            }
+        });
     }
 
     @Override

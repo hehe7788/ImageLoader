@@ -70,10 +70,12 @@ public class ImageAdapter extends BaseAdapter {
             viewHolder = (ViewHolder) convertView.getTag();
         }
 
-        //重置状态
+        //重置状态！！由于converview是复用的，必须要做重置。
+        // 否则，滑动后若图片尚未加载，会显示上一屏的图片，加载完成后突变为实际图片
         viewHolder.imageView.setImageResource(R.drawable.null_picture);
         viewHolder.imageButton.setImageResource(R.drawable.btn_check_off);
         viewHolder.imageView.setColorFilter(null);
+
         if (mSelectFileNames.contains(filePath)) {
             viewHolder.imageView.setColorFilter(Color.parseColor("#77000000"));
             viewHolder.imageButton.setImageResource(R.drawable.btn_check_on);
