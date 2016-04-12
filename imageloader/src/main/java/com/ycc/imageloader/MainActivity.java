@@ -21,8 +21,14 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.ycc.imageloader.bean.FolderBean;
 import com.ycc.imageloader.bean.ImageDirPopupWindow;
+import com.ycc.imageloader.util.VolleyNet;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -79,12 +85,15 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         initView();
         loadData();
         initEvent();
+
+        VolleyNet.volleyTest(this);
     }
 
     /**
