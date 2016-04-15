@@ -88,7 +88,7 @@ public class MainActivity extends Activity {
         loadData();
         initEvent();
 
-        VolleyNet.volleyTest(this);
+        //VolleyNet.volleyTest(this);
     }
 
     /**
@@ -126,7 +126,7 @@ public class MainActivity extends Activity {
                 mImageAdapter = new ImageAdapter(getApplicationContext(), mImages, mCurrentDir.getAbsolutePath());
                 mGridView.setAdapter(mImageAdapter);
 
-                mDirCount.setText(mImages.size()+"");
+                mDirCount.setText(mImages.size() + "");
                 mDirName.setText(folderBean.getName());
 
                 mPopUpWindow.dismiss();
@@ -246,6 +246,7 @@ public class MainActivity extends Activity {
                 if (mPopUpWindow.isShowing()) {
                     mPopUpWindow.dismiss();
                 } else {
+                    mPopUpWindow.setAnimationStyle(R.style.PopUpWindowAnim);
                     mPopUpWindow.showAsDropDown(mBottomBar, 0, 0);
                     lightOff();
                 }
