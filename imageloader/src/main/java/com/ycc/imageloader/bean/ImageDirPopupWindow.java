@@ -9,6 +9,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -29,6 +30,20 @@ public class ImageDirPopupWindow extends PopupWindow {
     private View mConvertView;
     private ListView mListView;
     private List<FolderBean> mFolderBeans;
+
+    /**
+     * 为了使ImageDirPopupWindow和别的activity解耦
+     * 使用接口 在activity里面实现回调
+     */
+    public interface onDirSelectedListener {
+        void onSelected(FolderBean folderBean);
+    }
+
+    public onDirSelectedListener mListener;
+
+    public void setOnDirSelectedListener(onDirSelectedListener listener) {
+        this.mListener = listener;
+    }
 
     public ImageDirPopupWindow(Context context, List<FolderBean> folderBeans) {
         calWindowSize(context);
@@ -62,6 +77,7 @@ public class ImageDirPopupWindow extends PopupWindow {
         initEvent();
     }
 
+
     private void initView(Context context) {
         mListView = (ListView) mConvertView.findViewById(R.id.popup_listView);
         mListView.setAdapter(new ListDirAdapter(context, R.layout.item_popup, mFolderBeans));
@@ -69,7 +85,14 @@ public class ImageDirPopupWindow extends PopupWindow {
     }
 
     private void initEvent() {
-
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                if (mListener != null) {
+                    mListener.onSelected(mFolderBeans.get(position));
+                }
+            }
+        });
     }
 
     private class ListDirAdapter extends ArrayAdapter<FolderBean> {
@@ -86,15 +109,19 @@ public class ImageDirPopupWindow extends PopupWindow {
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             ViewHolder holder;
+
             if (convertView == null) {
+                Log.e("convertView", "null");
                 holder = new ViewHolder();
                 convertView = inflater.inflate(resourceId, parent, false);
-                holder.image = (ImageView) convertView.findViewById(R.id.item_image);
+                holder.image = (ImageView) convertView.findViewById(R.id.item_listView_image);
                 holder.dirName = (TextView) convertView.findViewById(R.id.item_dir_name);
                 holder.dirCount = (TextView) convertView.findViewById(R.id.item_dir_file_count);
 
                 convertView.setTag(holder);
             } else {
+                Log.e("convertView", "not null");
+
                 holder = (ViewHolder) convertView.getTag();
             }
 

@@ -21,11 +21,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.ycc.imageloader.bean.FolderBean;
 import com.ycc.imageloader.bean.ImageDirPopupWindow;
 import com.ycc.imageloader.util.VolleyNet;
@@ -110,6 +105,32 @@ public class MainActivity extends Activity {
             @Override
             public void onDismiss() {
                 lightOn();
+            }
+        });
+
+        mPopUpWindow.setOnDirSelectedListener(new ImageDirPopupWindow.onDirSelectedListener() {
+            @Override
+            public void onSelected(FolderBean folderBean) {
+                //更新文件夹
+                mCurrentDir = new File(folderBean.getDir());
+                //更新图片名数组
+                mImages = Arrays.asList(mCurrentDir.list(new FilenameFilter() {
+                    @Override
+                    public boolean accept(File dir, String filename) {
+                        return filename.endsWith(".jpg")
+                                || filename.endsWith(".jpeg")
+                                || filename.endsWith(".png");
+                    }
+                }));
+
+                mImageAdapter = new ImageAdapter(getApplicationContext(), mImages, mCurrentDir.getAbsolutePath());
+                mGridView.setAdapter(mImageAdapter);
+
+                mDirCount.setText(mImages.size()+"");
+                mDirName.setText(folderBean.getName());
+
+                mPopUpWindow.dismiss();
+
             }
         });
     }
